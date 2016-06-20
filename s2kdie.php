@@ -320,7 +320,13 @@ function defrag() {
 	}
 }
 
-function execute_command($read_line_upper = "HELP") {
+function execute_command($read_line = "HELP") {
+	global $contents, $freeblocks, $floppy_size;
+	global $dp1, $dp2, $dp3, $dp4, $ddp4, $dp5, $dp6, $file_array, $file, $volname, $file_size, $newd, $type;
+	print "Command selected: " . $read_line . "\n";
+	
+	$read_line_upper = strtoupper ( $read_line );
+	
 	if ((substr ( $read_line_upper, 0, 4 ) == "HELP") or ($read_line_upper == "?")) {
 		print "\nSWITCH <sourceid> <destid>  Swap file order.";
 		print "DELAY  <bpm>                Calculate milliseconds for echo/reverb delay.";
@@ -653,7 +659,7 @@ function execute_command($read_line_upper = "HELP") {
 		if ($args [1] == '') {
 			if ($floppyt == 0) {
 				print "Install fdutils and/or change the $$setfdprmset variable in s2kdie.php\n";
-				continue;
+				return;
 			}
 			if ($floppy_size == 819200) {
 				exec ( $pathtosetfdprm . "setfdprm $floppy sect=5 dd ssize=1024 cyl=80" );
@@ -663,7 +669,7 @@ function execute_command($read_line_upper = "HELP") {
 			exec ( "cat $floppy > $tmpfile 2> /dev/null", $ra, $rv );
 			if ($rv) {
 				print "Please insert an AKAI floppy disk.\n";
-				continue;
+				return;
 			}
 			$imagefile = $tmpfile;
 		} else {
@@ -679,7 +685,7 @@ function execute_command($read_line_upper = "HELP") {
 			fclose ( $file_pointer );
 		} else {
 			print "There was an error loading the disk.\n";
-			continue;
+			return;
 		}
 		if ($args [1] == '') {
 			unlink ( "$tmpfile" );
@@ -713,22 +719,22 @@ function execute_command($read_line_upper = "HELP") {
 				$comp = ord ( $wav [20] );
 				if ($comp != 1) {
 					print "WAV file not uncompressed PCM.\n";
-					continue;
+					return;
 				}
 				$bits = ord ( $wav [34] );
 				if ($bits != 16) {
 					print "WAV file isn't 16bit.\n";
-					continue;
+					return;
 				}
 				$data = substr ( $wav, 44, (filesize ( $args [1] ) - 44) );
 				$box = ceil ( strlen ( $data ) / 1024 );
 				if ($box > $freeblocks) {
 					print "Insufficient space.\n";
-					continue;
+					return;
 				}
 				if ($channels > 2) {
 					print "More than 2 channels?\n";
-					continue;
+					return;
 				}
 				if ($channels == 2) {
 					$c1 = '';
@@ -753,7 +759,7 @@ function execute_command($read_line_upper = "HELP") {
 						$hz = 0;
 					} else {
 						print "Sample rate not supported.\n";
-						continue;
+						return;
 					}
 					$smphdr = "\x03" . chr ( $hz ) . "\x3C" . as2ak ( $args [1] ) . "\x80\x01\x00\x00\x02\x00\x00\x00\x04\x01\x00";
 					$smphdr = $smphdr . $nextb . "\x00\x00\x00\x00" . $nextb . $nextb;
@@ -855,7 +861,7 @@ function execute_command($read_line_upper = "HELP") {
 		$args = explode ( " ", $read_line_upper );
 		if (($args [1] >= sizeof ( $file_array )) or ($file_array == '')) {
 			print "File not found.\n";
-			continue;
+			return;
 		}
 		if ($type == "S900") {
 			$fname = strtolower ( trim ( substr ( $file_array [$args [1]], 0, 10 ) ) . "." . substr ( $file_array [$args [1]] [16], 0, 1 ) );
@@ -878,16 +884,16 @@ function execute_command($read_line_upper = "HELP") {
 		/*
 		 * if ($type == "S900") {
 		 * print "Currently only samples from S2000/S3000 disk images can be saved as WAV.\n";
-		 * continue;
+		 * return;
 		 * }
 		*/
 		if (($args [1] >= sizeof ( $file_array )) or ($file_array == '')) {
 			print "File not found.\n";
-			continue;
+			return;
 		}
 		if (($file_array [$args [1]] [16] != chr ( 243 )) and ($file_array [$args [1]] [16] != "S")) {
 			print "Not a valid sample file.\n";
-			continue;
+			return;
 		}
 		if ($type == "S900") {
 			$fname = strtolower ( trim ( substr ( $file_array [$args [1]], 0, 10 ) ) ) . ".wav";
@@ -936,7 +942,7 @@ function execute_command($read_line_upper = "HELP") {
 	if (substr ( $read_line_upper, 0, 3 ) == "VOL") {
 		if ($type == "S900") {
 			print "S900 disks have no volume name.\n";
-			continue;
+			return;
 		}
 		$args = explode ( " ", $read_line_upper );
 		$args [0] = '';
@@ -951,14 +957,14 @@ function execute_command($read_line_upper = "HELP") {
 		$args = explode ( " ", $read_line_upper );
 		if ($args [1] == "") {
 			print "You might want to specify an id to rename, and new name.\n";
-			continue;
+			return;
 		}
 		$args [0] = '';
 		$arg = $args [1];
 		$args [1] = '';
 		if (($arg >= sizeof ( $file_array )) or ($file_array == '')) {
 			print "File not found.\n";
-			continue;
+			return;
 		}
 		$args = trim ( implode ( " ", $args ) );
 		if ($args != '') {
@@ -980,7 +986,7 @@ function execute_command($read_line_upper = "HELP") {
 			$type = $args [1];
 		} else {
 			print "Invalid type.  S900/S2000/S3000 are valid.\n";
-			continue;
+			return;
 		}
 		dp1 ();
 		$freeblocks = 1583;
@@ -1006,7 +1012,7 @@ function execute_command($read_line_upper = "HELP") {
 		$args = explode ( " ", $read_line_upper );
 		if ($args [1] == '') {
 			print "Usage: DELAY <bpm>";
-			continue;
+			return;
 		}
 		print "1/4: " . round ( 60000 / $args [1] ) . "ms   1/8: " . round ( (60000 / $args [1]) / 2 ) . "ms\n";
 		$read_line_upper = '';
@@ -1119,14 +1125,13 @@ if (! file_exists ( $pathtosetfdprm . "setfdprm" )) {
 	$floppyt = 0;
 }
 
-if (count($argv) == 1) {
-	$handle = fopen($argv[0], "r");
+if (count($argv) == 2) {
+	$handle = fopen($argv[1], "r");
 	if ($handle) {
 		while( ! feof($handle)) {
 			// process the line read.
 			$read_line = trim ( fgets ( $handle ) );
-			$read_line_upper = strtoupper ( $read_line );
-			execute_command($read_line_upper);
+			execute_command($read_line);
 		}
 		fclose($handle);
 	} else {
@@ -1138,7 +1143,7 @@ if (count($argv) == 1) {
 		print "Command: ";
 		$read_line = trim ( fgets ( STDIN ) );
 		$read_line_upper = strtoupper ( $read_line );
-		execute_command($read_line_upper);
+		execute_command($read_line);
 	}
 }
 

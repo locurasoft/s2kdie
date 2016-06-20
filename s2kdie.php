@@ -320,31 +320,7 @@ function defrag() {
 	}
 }
 
-$type = "S2000";
-dp1 ();
-$contents = $dp1 . $dp2 . $dp3 . $dp4 . $dp5 . $dp6;
-$file_array = '';
-$file_size = '';
-$file = '';
-$freeblocks = 1583;
-$floppy_size = 1638400;
-$read_line_upper = '';
-
-importimage ();
-
-print "AKAI S2000/S3000/S900 Disk Image Editor v1.1.2\n(? for help.)\n\n";
-
-$floppyt = 1;
-if (! file_exists ( $pathtosetfdprm . "setfdprm" )) {
-	print "Floppy read/writes disabled, setfdprm not found.\n\n";
-	$floppyt = 0;
-}
-
-while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read_line_upper != "Q") ) {
-	print "Command: ";
-	$read_line = trim ( fgets ( STDIN ) );
-	$read_line_upper = strtoupper ( $read_line );
-	
+function execute_command($read_line_upper = "HELP") {
 	if ((substr ( $read_line_upper, 0, 4 ) == "HELP") or ($read_line_upper == "?")) {
 		print "\nSWITCH <sourceid> <destid>  Swap file order.";
 		print "DELAY  <bpm>                Calculate milliseconds for echo/reverb delay.";
@@ -808,7 +784,7 @@ while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read
 					if ($type == "S3000") {
 						$file_array [$file_index] = $dn1 . "\x00\x00\x00\x02" . $tip . "\xf0\x00\x00\x00\x00\x00\x0C";
 					}
-					
+						
 					if ($type == "S900") {
 						$file [$file_index] [8] = "-";
 						$file [$file_index] [9] = "L";
@@ -828,7 +804,7 @@ while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read
 						$dn2 [10] = "\x27";
 						$dn2 [11] = "\x1C";
 					}
-					
+						
 					$file_array [$file_index + 1] = $dn2 . "\x00\x00\x06\x0A" . $tip . "\xf0\x01\x00\x11\x00\x00\x11";
 					if ($type == "S900") {
 						$file_array [$file_index + 1] = $dn2 . "\x00\x00\x00\x00\x00\x00" . "S" . "\x00\x00\x00\x00\x00\x00\x00";
@@ -904,7 +880,7 @@ while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read
 		 * print "Currently only samples from S2000/S3000 disk images can be saved as WAV.\n";
 		 * continue;
 		 * }
-		 */
+		*/
 		if (($args [1] >= sizeof ( $file_array )) or ($file_array == '')) {
 			print "File not found.\n";
 			continue;
@@ -1120,7 +1096,52 @@ while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read
 			print " bytes free)\n\n";
 		}
 	}
+	
 }
-print "\n";
 
+$type = "S2000";
+dp1 ();
+$contents = $dp1 . $dp2 . $dp3 . $dp4 . $dp5 . $dp6;
+$file_array = '';
+$file_size = '';
+$file = '';
+$freeblocks = 1583;
+$floppy_size = 1638400;
+$read_line_upper = '';
+
+importimage ();
+
+print "AKAI S2000/S3000/S900 Disk Image Editor v1.1.2\n(? for help.)\n\n";
+
+$floppyt = 1;
+if (! file_exists ( $pathtosetfdprm . "setfdprm" )) {
+	print "Floppy read/writes disabled, setfdprm not found.\n\n";
+	$floppyt = 0;
+}
+
+if (count($argv) == 1) {
+	$handle = fopen($argv[0], "r");
+	if ($handle) {
+		while( ! feof($handle)) {
+			// process the line read.
+			$read_line = trim ( fgets ( $handle ) );
+			$read_line_upper = strtoupper ( $read_line );
+			execute_command($read_line_upper);
+		}
+		fclose($handle);
+	} else {
+		print "error opening the file " . $argv[0];
+		exit(1);
+	}
+} else {
+	while ( ($read_line_upper != "QUIT") and ($read_line_upper != "EXIT") and ($read_line_upper != "Q") ) {
+		print "Command: ";
+		$read_line = trim ( fgets ( STDIN ) );
+		$read_line_upper = strtoupper ( $read_line );
+		execute_command($read_line_upper);
+	}
+}
+
+print "\n";
+exit(0);
 ?>
